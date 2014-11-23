@@ -20,7 +20,9 @@ All text above, and the splash screen must be included in any redistribution
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 
-#define buttonPin 8
+#define leftPin 8
+#define rightPin 7
+#define buttonPin 6
 
 // Software SPI (slower updates, more flexible pin options):
 // pin 7 - Serial clock out (SCLK)
@@ -28,7 +30,7 @@ All text above, and the splash screen must be included in any redistribution
 // pin 5 - Data/Command select (D/C)
 // pin 4 - LCD chip select (CS)
 // pin 3 - LCD reset (RST)
-Adafruit_PCD8544 display = Adafruit_PCD8544(7, 6, 5, 4, 3);
+//Adafruit_PCD8544 display = Adafruit_PCD8544(7, 6, 5, 4, 3);
 
 // Hardware SPI (faster, but must use certain hardware pins):
 // SCK is LCD serial clock (SCLK) - this is pin 13 on Arduino Uno
@@ -36,7 +38,7 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(7, 6, 5, 4, 3);
 // pin 5 - Data/Command select (D/C)
 // pin 4 - LCD chip select (CS)
 // pin 3 - LCD reset (RST)
-// Adafruit_PCD8544 display = Adafruit_PCD8544(5, 4, 3);
+Adafruit_PCD8544 display = Adafruit_PCD8544(5, 4, 3);
 // Note with hardware SPI MISO and SS pins aren't used but will still be read
 // and written to during SPI transfer.  Be careful sharing these pins!
 
@@ -110,11 +112,13 @@ void setup()   {
 
   // revert back to no rotation
   display.setRotation(0);
+
+  pinMode(leftPin, INPUT_PULLUP);
+  pinMode(rightPin, INPUT_PULLUP);
+  pinMode(buttonPin, INPUT_PULLUP);
 }
 
 
-
-#define thermistorPin A0
 
 int x = 0;
 int y = 40;
@@ -125,11 +129,7 @@ int g = 0;
 int dy = 0;
 
 void loop() {
-  int rawTemp = analogRead(thermistorPin);
- Serial.println(rawTemp);
- int raw_min = 445;
- int raw_max = 520;
- unsigned int delay_count = rawTemp - 445;
+ int delay_count = 100;
 
  display.clearDisplay();
  display.drawBitmap(x, y,  logo16_glcd_bmp, 16, 16, 1);
@@ -138,18 +138,28 @@ void loop() {
  y = (y+dy);
  if (y < 0) { y = 0; dy = 2; }
  if (y > YMAX) { y = YMAX; dy = 0; }
- if (x < 0 || x > XMAX) { dx=-dx; x+=dx; }
+ if (x < 0) { x = 0; }
+ else if (x > XMAX) { x = XMAX; }
  if (g > 1) {
     g--; if (g < 5) { dy = 1; } if (g == 0) { dy = 0; }
  }
  int buttonState;
  for (int i=0; i < 100*delay_count; ++i) {
    buttonState = digitalRead(buttonPin);
-   if (buttonState == HIGH) {
+   if (buttonState == LOW) {
 	if (dy == 0) {
-	  dy = -2; g = (75 - delay_count)/3;
+	  dy = -2; g = 10;
 	  break;
 	}
+   }
+   int leftState = digitalRead(leftPin);
+   int rightState = digitalRead(rightPin);
+   if (leftState == LOW && rightState == HIGH) {
+	dx = 1;
+   } else if (leftState == HIGH && rightState == LOW) {
+	dx = -1;
+   } else {
+	dx = 0;
    }
  }
 }
