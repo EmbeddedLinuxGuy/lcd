@@ -42,33 +42,22 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(5, 4, 3);
 // Note with hardware SPI MISO and SS pins aren't used but will still be read
 // and written to during SPI transfer.  Be careful sharing these pins!
 
-#define NUMFLAKES 10
-#define XPOS 0
-#define YPOS 1
-#define DELTAY 2
+#define FIG_HEIGHT 8
+#define FIG_WIDTH  8
 
+#define YMAX 40
+#define XMAX 76
 
-#define LOGO16_GLCD_HEIGHT 16
-#define LOGO16_GLCD_WIDTH  16
-
-static const unsigned char PROGMEM logo16_glcd_bmp[] =
-{ B00110000, B00000000,
-  B00110000, B00000000,
-  B00100000, B00000000,
-  B01111100, B00000000,
-  B10110010, B00000000,
-  B00110000, B00000000,
-  B01001000, B00000000,
-  B11101110, B00000000,
-
-  B00000000, B00000000,
-  B00000000, B00000000,
-  B00000000, B00000000,
-  B00000000, B00000000,
-  B00000000, B00000000,
-  B00000000, B00000000,
-  B00000000, B00000000,
-  B00000000, B00000000 };
+static const unsigned char PROGMEM fig_bmp[] =
+{ B00110000,
+  B00110000,
+  B00100000,
+  B01111100,
+  B10110010,
+  B00110000,
+  B01001000,
+  B11101110
+};
 
 void setup()   {
   Serial.begin(9600);
@@ -84,33 +73,50 @@ void setup()   {
   pinMode(leftPin, INPUT_PULLUP);
   pinMode(rightPin, INPUT_PULLUP);
   pinMode(buttonPin, INPUT_PULLUP);
+
+  int i;
+  for (i=1; i < XMAX+8; ++i) {
+    display.drawPixel(i, YMAX+8, BLACK);
+  }
 }
 
-
-
 int x = 0;
-int y = 40;
-#define YMAX 40
-#define XMAX 76
+int y = YMAX-1;
 int dx = 1;
 int g = 0;
 int dy = 0;
 
+
+
+
 void loop() {
- int delay_count = 100;
+ int delay_count = 50;
+ int base = YMAX;
 
  display.clearDisplay();
- display.drawBitmap(x, y,  logo16_glcd_bmp, 16, 16, 1);
+ display.drawBitmap(x, y,  fig_bmp, FIG_WIDTH, FIG_HEIGHT, 1);
+  int i;
+  for (i=0; i < XMAX/2; ++i) {
+    display.drawPixel(i, YMAX+7, BLACK);
+  }
+  for (i=XMAX/2; i < XMAX+8; ++i) {
+    display.drawPixel(i, YMAX+8-10, BLACK);
+  }
  display.display();
  x = (x+dx);
+ if (x > XMAX/2) { base = YMAX-10; } else { base = YMAX; } 
  y = (y+dy);
  if (y < 0) { y = 0; dy = 2; }
- if (y > YMAX) { y = YMAX; dy = 0; }
+
+ if (y > base) { y = base; dy = 0; }
  if (x < 0) { x = 0; }
  else if (x > XMAX) { x = XMAX; }
  if (g > 1) {
     g--; if (g < 5) { dy = 1; } if (g == 0) { dy = 0; }
+ } else {
+   if (y < base) { dy = 2; }
  }
+
  int buttonState;
  for (int i=0; i < 100*delay_count; ++i) {
    buttonState = digitalRead(buttonPin);
