@@ -20,6 +20,8 @@ All text above, and the splash screen must be included in any redistribution
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 
+#define buttonPin 8
+
 // Software SPI (slower updates, more flexible pin options):
 // pin 7 - Serial clock out (SCLK)
 // pin 6 - Serial data out (DIN)
@@ -48,22 +50,23 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(7, 6, 5, 4, 3);
 #define LOGO16_GLCD_WIDTH  16
 
 static const unsigned char PROGMEM logo16_glcd_bmp[] =
-{ B00000000, B11000000,
-  B00000001, B11000000,
-  B00000001, B11000000,
-  B00000011, B11100000,
-  B11110011, B11100000,
-  B11111110, B11111000,
-  B01111110, B11111111,
-  B00110011, B10011111,
-  B00011111, B11111100,
-  B00001101, B01110000,
-  B00011011, B10100000,
-  B00111111, B11100000,
-  B00111111, B11110000,
-  B01111100, B11110000,
-  B01110000, B01110000,
-  B00000000, B00110000 };
+{ B00110000, B00000000,
+  B00110000, B00000000,
+  B00100000, B00000000,
+  B01111100, B00000000,
+  B10110010, B00000000,
+  B00110000, B00000000,
+  B01001000, B00000000,
+  B11101110, B00000000,
+
+  B00000000, B00000000,
+  B00000000, B00000000,
+  B00000000, B00000000,
+  B00000000, B00000000,
+  B00000000, B00000000,
+  B00000000, B00000000,
+  B00000000, B00000000,
+  B00000000, B00000000 };
 
 void setup()   {
   Serial.begin(9600);
@@ -80,7 +83,6 @@ void setup()   {
  // draw the first ~12 characters in the font
   testdrawchar();
   display.display();
-  delay(2000);
   display.clearDisplay();
 
   // text display tests
@@ -94,7 +96,6 @@ void setup()   {
   display.setTextColor(BLACK);
   display.print("0x"); display.println(0xDEADBEEF, HEX);
   display.display();
-  delay(2000);
 
   // rotation example
   display.clearDisplay();
@@ -106,22 +107,51 @@ void setup()   {
   display.setTextSize(2);
   display.println("Example!");
   display.display();
-  delay(2000);
 
   // revert back to no rotation
   display.setRotation(0);
-
-  // invert the display
-  display.invertDisplay(true);
-  delay(1000); 
-  display.invertDisplay(false);
-  delay(1000); 
 }
 
 
 
+#define thermistorPin A0
+
+int x = 0;
+int y = 40;
+#define YMAX 40
+#define XMAX 76
+int dx = 1;
+int g = 0;
+int dy = 0;
+
 void loop() {
-  
+  int rawTemp = analogRead(thermistorPin);
+ Serial.println(rawTemp);
+ int raw_min = 445;
+ int raw_max = 520;
+ unsigned int delay_count = rawTemp - 445;
+
+ display.clearDisplay();
+ display.drawBitmap(x, y,  logo16_glcd_bmp, 16, 16, 1);
+ display.display();
+ x = (x+dx);
+ y = (y+dy);
+ if (y < 0) { y = 0; dy = 2; }
+ if (y > YMAX) { y = YMAX; dy = 0; }
+ if (x < 0 || x > XMAX) { dx=-dx; x+=dx; }
+ if (g > 1) {
+    g--; if (g < 5) { dy = 1; } if (g == 0) { dy = 0; }
+ }
+ int buttonState;
+ for (int i=0; i < 100*delay_count; ++i) {
+   buttonState = digitalRead(buttonPin);
+   if (buttonState == HIGH) {
+	if (dy == 0) {
+	  dy = -2; g = (75 - delay_count)/3;
+	  break;
+	}
+   }
+ }
 }
 
 
